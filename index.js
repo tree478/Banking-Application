@@ -20,6 +20,7 @@ db.connect();
 
 db.query("SELECT * FROM users", (err, res) => {
     if (err){
+        console.log(err);
         console.error("Error executing query", err.stack);
     } else{
         data = res.rows;
@@ -28,14 +29,14 @@ db.query("SELECT * FROM users", (err, res) => {
 })
 
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(express.static("public"));
+//app.use(express.static("public"));
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/public/index.ejs");
+    res.sendFile(__dirname + "/public/index.html");
 })
 
-app.post("/welcome.ejs", (req, res) =>{
-    res.sendFile(__dirname + "/public/welcome.ejs")
+app.post("/welcome.html", (req, res) =>{
+    res.sendFile(__dirname + "/public/welcome.html")
 })
 
 app.listen(port, () => {
