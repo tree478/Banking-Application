@@ -1,12 +1,20 @@
-import express from "express";
-import {dirname} from "path";
-import { fileURLToPath } from "url";
-import bodyParser from "body-parser";
-const __dirname = dirname(fileURLToPath(import.meta.url));
-import pg from "pg";
+const express = require("express");
+const bodyParser = require("body-parser");
+const ejs = require("ejs");
+// const {dirname} = require("path");
+// const {fileURLToPath} = require("url");
+// const __directory = dirname(fileURLToPath(meta.url));
+const pg = require("pg");
+
+//import {dirname} from "path";
+//import { fileURLToPath } from "url";
+
+//import pg from "pg";
+//import ejs from "ejs";
 
 const app = express();
-const port = 3000;
+const port = 3001;
+
 var data = "";
 const db  = new pg.Client({
     user: "postgres",
@@ -24,19 +32,26 @@ db.query("SELECT * FROM users", (err, res) => {
         console.error("Error executing query", err.stack);
     } else{
         data = res.rows;
+        console.log("database connected");
     }
     db.end();
 })
 
+app.use(express.static("/public"));
+app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
-//app.use(express.static("public"));
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+    res.render("home");
+    //res.sendFile(__directory + "/public/home.ejs")
 })
 
-app.post("/welcome.html", (req, res) =>{
-    res.sendFile(__dirname + "/public/welcome.html")
+app.get("/login", (req, res) =>{
+    res.render("login");
+})
+
+app.get("/register", (req, res) => {
+    res.render("register");
 })
 
 app.listen(port, () => {
