@@ -1,16 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
-// const {dirname} = require("path");
-// const {fileURLToPath} = require("url");
-// const __directory = dirname(fileURLToPath(meta.url));
+const mongoose = require("mongoose");
+const {pool} = require("./dbConfig");
 const pg = require("pg");
-
-//import {dirname} from "path";
-//import { fileURLToPath } from "url";
-
-//import pg from "pg";
-//import ejs from "ejs";
+const bcrypt = require("bcrypt");
 
 const app = express();
 const port = 3001;
@@ -34,16 +28,16 @@ db.query("SELECT * FROM users", (err, res) => {
         data = res.rows;
         console.log("database connected");
     }
-    db.end();
+    //db.end();
 })
 
-app.use(express.static("/public"));
+//app.use(express.static("/public"));
 app.set("view engine", "ejs");
+app.use(express.urlencoded({extended:false}));
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.get('/', (req, res) => {
     res.render("home");
-    //res.sendFile(__directory + "/public/home.ejs")
 })
 
 app.get("/login", (req, res) =>{
@@ -52,6 +46,80 @@ app.get("/login", (req, res) =>{
 
 app.get("/register", (req, res) => {
     res.render("register");
+})
+
+app.get("/dashboard", (req, res) => {
+    res.render("dashboard");
+})
+
+app.post("/register", async (req, res) => {
+    var format = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    let numbers = /[1234567890]/;
+    let {name, email, password, password2} = req.body;
+
+    console.log({
+        name, email, password, password2
+    });
+
+    let errors = [];
+
+    if (!name, !email, !password, !password2){
+        errors.push({message: "Please enter all fields"})
+    };
+
+    if(password.length < 6){
+        errors.push({message: "Password must be at least 6 characters long and must contain at least one number and special character"})
+    };
+
+    //|| !format.test(password) || numbers.test(password)
+
+    if(password != password2){
+        errors.push({message: "Passwords do not match"})
+    };
+
+    if(errors.length > 0){
+        res.render("register", {errors});
+
+    } else {
+        let hashedPassword = await bcrypt.hash(password, 10);
+        console.log(hashedPassword);
+
+        db.query(`SELECT * FROM users
+        WHERE email = $1`, [email], (err, results) => {
+            if (err) {
+                throw err
+            }
+
+            console.log(results.rows);
+            if (results.rows.length > 0){
+                errors.push({message: "Email already registered"});
+                res.render('register', {errors});
+            }
+        }
+        )
+    }
+
+    console.log("actions completed");
+    console.log(errors);
+
+
+});
+
+app.post("/login", (req, res) => {
+    let errors = [];
+    let {username, password} = req.body;
+    console.log(db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = '{username}')`));
+    db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = '{username}')`, (err, results) => {
+        if(err){
+            throw err
+        } else if(results.rows.length > 0){
+            console.log(results);
+            errors.push({message: "This email does not exist"});
+            res.render('login', {errors});
+        } else {
+            console.log(db.query(`SELECT password FROM users WHERE email = '{username}'`));
+        }
+    })
 })
 
 app.listen(port, () => {
