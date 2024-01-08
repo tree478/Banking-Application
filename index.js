@@ -57,9 +57,7 @@ app.post("/register", async (req, res) => {
     let numbers = /[1234567890]/;
     let {name, email, password, password2} = req.body;
 
-    console.log({
-        name, email, password, password2
-    });
+    console.log({name, email, password, password2});
 
     let errors = [];
 
@@ -84,8 +82,7 @@ app.post("/register", async (req, res) => {
         let hashedPassword = await bcrypt.hash(password, 10);
         console.log(hashedPassword);
 
-        db.query(`SELECT * FROM users
-        WHERE email = $1`, [email], (err, results) => {
+        db.query(`SELECT * FROM users WHERE email = $1`, [email], (err, results) => {
             if (err) {
                 throw err
             }
@@ -99,28 +96,45 @@ app.post("/register", async (req, res) => {
         )
     }
 
+    if(errors.length == 0){
+        db.query(`INSERT INTO users values($1, $2, $3)`, [name], [email], [hashedPassword]);
+        console.log("user inserted into table");
+    }
+
     console.log("actions completed");
     console.log(errors);
 
 
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
     let errors = [];
     let {username, password} = req.body;
-    console.log(db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = '{username}')`));
-    db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = '{username}')`, (err, results) => {
+    db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`, [username], (err, results) => {
+        var exist = results.rows[0].exists;
         if(err){
             throw err
-        } else if(results.rows.length > 0){
-            console.log(results);
+        } else if(!exist){
             errors.push({message: "This email does not exist"});
             res.render('login', {errors});
         } else {
-            console.log(db.query(`SELECT password FROM users WHERE email = '{username}'`));
+            db.query(`SELECT password FROM users WHERE email = $1`, [username], (err, results) => {
+                let decrypted_password = await bcrypt.hash(password, 10);
+                console.log(results.rows[0].password);
+                if(err){
+                    throw err
+                } else if(results.rows[0].password == password){
+                    console.log(results.rows[0].password);
+                    res.render('dashboard');
+            //res.render('dashboard');
+                } else {
+                    errors.push({message: "Your password is incorrect"});
+                    res.render('login', {errors});
+                }
+            })
         }
     })
-})
+});
 
 app.listen(port, () => {
     console.log('server is running!')
