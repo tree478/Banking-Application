@@ -97,8 +97,9 @@ app.post("/register", async (req, res) => {
     }
 
     if(errors.length == 0){
-        db.query(`INSERT INTO users values($1, $2, $3)`, [name], [email], [hashedPassword]);
+        db.query(`INSERT INTO users VALUES ($1, $2, $3)`, [name], [email], [password]);
         console.log("user inserted into table");
+        res.render('dashboard');
     }
 
     console.log("actions completed");
@@ -107,7 +108,7 @@ app.post("/register", async (req, res) => {
 
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
     let errors = [];
     let {username, password} = req.body;
     db.query(`SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`, [username], (err, results) => {
@@ -118,8 +119,10 @@ app.post("/login", async (req, res) => {
             errors.push({message: "This email does not exist"});
             res.render('login', {errors});
         } else {
+            console.log("got here");
             db.query(`SELECT password FROM users WHERE email = $1`, [username], (err, results) => {
-                let decrypted_password = await bcrypt.hash(password, 10);
+                //let decrypted_password = await bcrypt.hash(password, 10);
+                console.log("got here");
                 console.log(results.rows[0].password);
                 if(err){
                     throw err
